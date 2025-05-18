@@ -1,36 +1,71 @@
-from utils import get_neighbors
+import time
 
-def is_valid(grid, i, j, val):
-    height, width = len(grid), len(grid[0])
-    neighbors = get_neighbors(i, j, height, width)
-    
-    for ni, nj in neighbors:
-        if isinstance(grid[ni][nj], int):
-            count = grid[ni][nj]
-            neighbor_traps = sum(1 for x, y in get_neighbors(ni, nj, height, width)
-                               if (x == i and y == j and val == 'T') or
-                                  (grid[x][y] == 'T'))
-            if neighbor_traps > count:
-                return False
-    return True
-
-def solve_backtracking(grid):
-    def solve(pos=0):
-        if pos == len(empty_cells):
-            return True
+def solve_backtracking(cnf, max_attempts=1000):
+    if not cnf:
+        return []  
         
-        i, j = empty_cells[pos]
-        for val in ['T', 'G']:
-            if is_valid(grid, i, j, val):
-                grid[i][j] = val
-                if solve(pos + 1):
-                    return True
-                grid[i][j] = '_'  # backtrack
+    assignment = {}  
+    start_time = time.time()
+    timeout = 30
+    
+    def simplify_cnf(cnf, var, value):
+        new_cnf = []
+        for clause in cnf:
+            if var in clause and value or -var in clause and not value:
+                continue
+            new_clause = [lit for lit in clause 
+                         if abs(lit) != var]
+            
+            if not new_clause:
+                return None
+            new_cnf.append(new_clause)
+            
+        return new_cnf
+
+    def backtrack(cnf, remaining_attempts):
+        
+        if time.time() - start_time > timeout:
+            print("\nTimeout: Backtracking taking too long")
+            return False
+            
+        if remaining_attempts <= 0:
+            print("\nExceeded maximum attempts")
+            return False
+        
+        
+        if not cnf:
+            return True
+            
+        
+        used_vars = set(abs(lit) for clause in cnf for lit in clause)
+        if not used_vars:  
+            return False
+            
+        
+        var = min(used_vars)
+        
+       
+        simplified_cnf = simplify_cnf(cnf, var, True)
+        if simplified_cnf is not None:
+            assignment[var] = True
+            if backtrack(simplified_cnf, remaining_attempts - 1):
+                return True
+                
+        simplified_cnf = simplify_cnf(cnf, var, False)
+        if simplified_cnf is not None:
+            assignment[var] = False
+            if backtrack(simplified_cnf, remaining_attempts - 1):
+                return True
+                
+        # solution not found
+        assignment.pop(var, None)
         return False
 
-    height, width = len(grid), len(grid[0])
-    empty_cells = [(i, j) for i in range(height) for j in range(width)
-                   if grid[i][j] == '_']
-    if solve():
-        return grid
+    if backtrack(cnf, max_attempts):
+        n_vars = max(abs(lit) for clause in cnf for lit in clause)
+        result = []
+        for var in range(1, n_vars + 1):
+            if assignment.get(var, False): 
+                result.append(var)
+        return result
     return None

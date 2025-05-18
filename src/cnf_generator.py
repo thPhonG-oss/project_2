@@ -10,7 +10,6 @@ def generate_cnf(grid):
         for j in range(n_columns):
             cell = grid[i][j]
             if cell == 'T':
-                # if the cell is a trap, add a clause to ensure it is a trap
                 cnf.append([get_var_id(i, j, n_columns)])
             elif cell == 'G':
                 cnf.append([-get_var_id(i, j, n_columns)])
@@ -20,9 +19,14 @@ def generate_cnf(grid):
                 n_traps = [get_var_id(x, y, n_columns) for x, y in neighbors if grid[x][y] == 'T']
                 unknown_neighbors = [get_var_id(x, y, n_columns) for x, y in neighbors if grid[x][y] == '_']
                 remaining = cnt - len(n_traps)
+                
                 # if the number of traps is greater than the count, it's unsatisfiable
-                if remaining < 0:
+                if remaining < 0 or remaining > len(unknown_neighbors):
                     return None
+                elif remaining == 0:
+                    cnf.append([-x for x in unknown_neighbors])
+                elif remaining == len(unknown_neighbors):
+                    cnf.append(unknown_neighbors)
                 
                 # at least k true
                 for combo in combinations(unknown_neighbors, len(unknown_neighbors) - remaining + 1):

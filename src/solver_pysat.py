@@ -9,6 +9,6 @@ def solve_cnf(cnf):
     
     if solver.solve():
         model = solver.get_model()
-        return model  # Return the model if a solution is found
+        return model  
     else:
-        return None  # No solution found
+        return None 

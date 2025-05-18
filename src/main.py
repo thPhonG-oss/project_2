@@ -35,13 +35,18 @@ def solve_puzzle(grid, solver_type):
     start_time = time.time()
     solution = None
     
+    # Chuyển grid thành CNF một lần
+    cnf = generate_cnf(grid)
+    if not cnf:
+        return None, time.time() - start_time
+    
     solvers = {
-        1: lambda g: solve_cnf(generate_cnf(g)),
-        2: lambda g: solve_backtracking([row[:] for row in g]),
-        3: lambda g: solve_bruteforce([row[:] for row in g])
+        1: solve_cnf,  # PySAT solver
+        2: solve_backtracking,  # Backtracking solver
+        3: solve_bruteforce  # Bruteforce solver
     }
     
-    solution = solvers.get(solver_type)(grid)
+    solution = solvers.get(solver_type)(cnf)
     return solution, time.time() - start_time
 
 def main():
